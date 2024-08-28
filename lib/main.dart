@@ -1,10 +1,12 @@
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:todo/modules/splash_screen.dart';
+import 'package:todo/notifications/firebase_notification.dart';
 import 'package:todo/styles/theme.dart';
 import 'package:todo/todo/provider/theme_provider.dart';
 
@@ -15,7 +17,10 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
+  await NotificationService.initializeNotifications();
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
+  NotificationSettings settings = await messaging.requestPermission();
+  FirebaseMessaging.onBackgroundMessage(NotificationService.handleNotification);
   AwesomeNotifications().initialize(
     'resource://drawable/bell',
     [
@@ -25,6 +30,13 @@ void main() async {
         channelDescription: 'Notification channel for basic tests',
         defaultColor: Color(0xFF9D50DD),
         ledColor: Colors.white,
+      ),
+      NotificationChannel(
+        channelKey: 'firebase_channel',
+        channelName: 'firebase notifications',
+        channelDescription: 'Notification channel for basic tests',
+        defaultColor: Color(0xFF9D50DD),
+        ledColor: Colors.blue,
       ),
     ],
   );

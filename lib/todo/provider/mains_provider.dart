@@ -40,7 +40,8 @@ class MainProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addTask() {
+  Future<void> addTask() async {
+    // إعداد نموذج المهمة
     TaskModel task = TaskModel(
       id: '',
       title: titleController.text,
@@ -51,29 +52,33 @@ class MainProvider extends ChangeNotifier {
       userId: FirebaseAuth.instance.currentUser?.uid ?? "",
     );
 
-    FireBaseFunctions.addTask(task);
+    // إضافة المهمة إلى Firestore
+    await FireBaseFunctions.addTask(task);
+
+    // إعداد إشعار مجدول بناءً على تاريخ ووقت المهمة
+    DateTime scheduledNotificationDateTime = DateTime(
+      selectedTimeTask.year,
+      selectedTimeTask.month,
+      selectedTimeTask.day,
+      timeOfDay.hour,
+      timeOfDay.minute,
+    );
 
     AwesomeNotifications().createNotification(
       content: NotificationContent(
-        id: DateTime.now().millisecondsSinceEpoch,
-        channelKey: 'basic_channel',
+        id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
+        channelKey: 'firebase_channel',
         title: task.title,
         body: task.desc,
       ),
-      schedule: NotificationCalendar(
-        year: DateTime.fromMillisecondsSinceEpoch(task.date).year,
-        month: DateTime.fromMillisecondsSinceEpoch(task.date).month,
-        day: DateTime.fromMillisecondsSinceEpoch(task.date).day,
-        hour: int.parse(task.time.split(":")[0]),
-        minute: int.parse(task.time.split(":")[1]),
-        second: 0,
-        millisecond: 0,
+      schedule: NotificationCalendar.fromDate(
+        date: scheduledNotificationDateTime,
         preciseAlarm: true,
       ),
     );
+
     titleController.clear();
     descController.clear();
-    // notifyListeners();
   }
 
   Stream<List<TaskModel?>> getTask() {
@@ -94,7 +99,6 @@ class MainProvider extends ChangeNotifier {
     FireBaseFunctions.updateTask(updatedTask);
   }
 
-  // جلب بيانات المستخدم
   void getUser() async {
     user = await FireBaseFunctions.getUser();
     notifyListeners();
